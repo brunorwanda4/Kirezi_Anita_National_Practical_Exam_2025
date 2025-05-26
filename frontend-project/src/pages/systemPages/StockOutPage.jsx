@@ -97,7 +97,7 @@ const StockOutPage = () => {
                 <tr key={item.id} className="hover">
                   <td>{item.id}</td>
                   <td>{item.spare_part_name}</td>
-                  <td>{item.category}</td>
+                  <td>{item.category_name}</td>
                   <td>{item.quantity}</td>
                   <td>${item.unit_price }</td>
                   <td>${(item.quantity * item.unit_price).toFixed(2)}</td>
