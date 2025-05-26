@@ -1,46 +1,110 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import apiClient from '../api';
 
 const StockOutEditModal = ({ item, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
-    quantity: item.quantity,
-    unitPrice: item.unitPrice
+    spare_part_id: '',
+    quantity: '',
+    unit_price: '',
+    date: '',
   });
+  const [spareParts, setSpareParts] = useState([]);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  useEffect(() => {
+    const fetchSpareParts = async () => {
+      try {
+        const response = await apiClient.get('/spare-parts');
+        setSpareParts(response.data);
+      } catch (err) {
+        console.error("Failed to fetch spare parts for edit modal", err);
+      }
+    };
+    fetchSpareParts();
 
-  const handleChange = e =>
+    if (item) {
+      setFormData({
+        spare_part_id: item.spare_part_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        date: item.date ? new Date(item.date).toISOString().split('T')[0] : '',
+      });
+    }
+  }, [item]);
+
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
+  };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
     try {
-      await axios.put(`http://localhost:5000/api/stockout/${item.stockoutId}`, formData);
+      // Corrected API endpoint
+      await apiClient.put(`/stock-out/${item.id}`, {
+        ...formData,
+        quantity: parseInt(formData.quantity, 10),
+        unit_price: parseFloat(formData.unit_price)
+      });
       onSuccess();
     } catch (err) {
-      console.error('Update error:', err);
+      setError(err.response?.data?.error || 'Failed to update stock out record.');
+      console.error("Stock out edit error:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  if (!item) return null;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-      <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Edit Stock Out</h2>
+    <div className="modal modal-open">
+      <div className="modal-box w-11/12 max-w-lg relative">
+        <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        <h3 className="font-bold text-lg text-primary mb-4">Edit Stock Out Record</h3>
+        {error && <div className="alert alert-error shadow-sm my-2"><span>{error}</span></div>}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block">Quantity</label>
-            <input name="quantity" type="number" value={formData.quantity} onChange={handleChange} className="w-full p-2 border rounded" required />
+          <div className="form-control">
+            <label className="label"><span className="label-text">Spare Part</span></label>
+            <select 
+              name="spare_part_id" 
+              value={formData.spare_part_id} 
+              onChange={handleChange} 
+              className="select select-bordered select-primary w-full" 
+              required
+            >
+              <option value="" disabled>Select Spare Part</option>
+              {spareParts.map(part => (
+                <option key={part.id} value={part.id}>
+                  {part.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <div>
-            <label className="block">Unit Price</label>
-            <input name="unitPrice" type="number" value={formData.unitPrice} onChange={handleChange} className="w-full p-2 border rounded" required />
+          <div className="form-control">
+            <label className="label"><span className="label-text">Quantity</span></label>
+            <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} className="input input-bordered input-primary w-full" min="1" required />
           </div>
-          <div className="flex justify-end space-x-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded">Cancel</button>
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+          <div className="form-control">
+            <label className="label"><span className="label-text">Selling Unit Price ($)</span></label>
+            <input type="number" name="unit_price" value={formData.unit_price} onChange={handleChange} step="0.01" className="input input-bordered input-primary w-full" min="0" required />
+          </div>
+          <div className="form-control">
+            <label className="label"><span className="label-text">Date</span></label>
+            <input type="date" name="date" value={formData.date} onChange={handleChange} className="input input-bordered input-primary w-full" required />
+          </div>
+          <div className="modal-action">
+            <button type="button" onClick={onClose} className="btn btn-ghost">Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={isLoading}>
+              {isLoading ? <span className="loading loading-spinner"></span> : 'Save Changes'}
+            </button>
           </div>
         </form>
       </div>
     </div>
   );
 };
-
 export default StockOutEditModal;
