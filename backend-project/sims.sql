@@ -1,21 +1,15 @@
-CREATE DATABASE IF NOT EXISTS `sims`;
-USE `sims`;
+DROP DATABASE IF EXISTS sims;
+CREATE DATABASE IF NOT EXISTS sims;
+USE sims;
 
--- Category Table
-CREATE TABLE `categories` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `name` VARCHAR(100) NOT NULL UNIQUE
-);
-
--- Spare Part Table
+-- Spare Part Table (updated)
 CREATE TABLE `spare_parts` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(100) NOT NULL,
-  `category_id` INT NOT NULL,
+  `category` VARCHAR(100) NOT NULL,
   `quantity` INT NOT NULL DEFAULT 0,
   `unit_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  `total_price` DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
-  FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE RESTRICT
+  `total_price` DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED
 );
 
 CREATE TABLE `stock_in` (

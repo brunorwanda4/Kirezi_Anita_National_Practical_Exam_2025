@@ -239,13 +239,13 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Spare Parts Routes
+// Spare Parts Routes
 app.get('/api/spare-parts', authenticate, async (req, res) => {
   try {
     const spareParts = await executeQuery(`
-      SELECT sp.id, sp.name, sp.quantity, sp.unit_price, sp.category_id, c.name AS category_name 
-      FROM spare_parts sp
-      LEFT JOIN categories c ON sp.category_id = c.id
-    `); // Using LEFT JOIN to include parts even if category is null (though ideally category_id is NOT NULL)
+      SELECT id, name, category, quantity, unit_price, total_price 
+      FROM spare_parts
+    `);
     res.json(spareParts);
   } catch (error) {
     console.error('Error fetching spare parts:', error);
@@ -255,44 +255,37 @@ app.get('/api/spare-parts', authenticate, async (req, res) => {
 
 app.post('/api/spare-parts', authenticate, async (req, res) => {
   try {
-    const { name, category_id, quantity, unit_price } = req.body;
+    const { name, category, quantity, unit_price } = req.body;
 
-    if (!name || !category_id || quantity === undefined || unit_price === undefined) {
-      return res.status(400).json({ error: 'Missing required fields: name, category_id, quantity, unit_price' });
+    if (!name || !category || quantity === undefined || unit_price === undefined) {
+      return res.status(400).json({ error: 'Missing required fields: name, category, quantity, unit_price' });
     }
     if (typeof quantity !== 'number' || quantity < 0 || typeof unit_price !== 'number' || unit_price < 0) {
         return res.status(400).json({ error: 'Quantity and unit price must be non-negative numbers.' });
     }
 
-
     const existingParts = await executeQuery(
-      'SELECT id FROM spare_parts WHERE name = ? AND category_id = ?',
-      [name, category_id]
+      'SELECT id FROM spare_parts WHERE name = ? AND category = ?',
+      [name, category]
     );
 
     if (existingParts.length > 0) {
       return res.status(409).json({ error: 'Spare part with this name already exists in this category' });
     }
     
-    // Verify category_id exists
-    const categories = await executeQuery('SELECT id FROM categories WHERE id = ?', [category_id]);
-    if (categories.length === 0) {
-        return res.status(400).json({ error: `Category with id ${category_id} not found.` });
-    }
-
     const result = await executeQuery(
-      'INSERT INTO spare_parts (name, category_id, quantity, unit_price) VALUES (?, ?, ?, ?)',
-      [name, category_id, quantity, unit_price]
+      'INSERT INTO spare_parts (name, category, quantity, unit_price) VALUES (?, ?, ?, ?)',
+      [name, category, quantity, unit_price]
     );
 
     res.status(201).json({
       message: 'Spare part created successfully',
       id: result.insertId,
-      name, category_id, quantity, unit_price // Return the created object
+      name, category, quantity, unit_price
     });
   } catch (error) {
     console.error('Error creating spare part:', error);
-    res.status(500).json({ error: 'Failed to create spare part' });
+    res.status(500).json({ error: `Failed to create spare part : ${error}` });
   }
 });
 
@@ -388,12 +381,11 @@ app.post('/api/stock-out', authenticate, async (req, res) => {
 app.get('/api/stock-out', authenticate, async (req, res) => {
   try {
     const stockOutRecords = await executeQuery(`
-      SELECT so.id, so.spare_part_id, so.quantity, so.unit_price, so.date, so.created_at,
+      SELECT so.id, so.spare_part_id, so.quantity, so.unit_price, so.total_price, so.date, so.created_at,
              sp.name AS spare_part_name, 
-             c.name AS category_name
+             sp.category AS category_name
       FROM stock_out so
       JOIN spare_parts sp ON so.spare_part_id = sp.id
-      JOIN categories c ON sp.category_id = c.id
       ORDER BY so.date DESC, so.created_at DESC
     `);
     res.json(stockOutRecords);
@@ -514,7 +506,6 @@ app.get('/api/reports/daily', authenticate, async (req, res) => {
     if (!date) {
       return res.status(400).json({ error: 'Date parameter (YYYY-MM-DD) is required' });
     }
-    // Basic date validation (can be more robust)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return res.status(400).json({ error: 'Invalid date format. Please use YYYY-MM-DD.' });
     }
@@ -525,20 +516,18 @@ app.get('/api/reports/daily', authenticate, async (req, res) => {
     );
 
     const stockOutResults = await executeQuery(
-      // Assuming stock_out.unit_price is the selling price, total_price would be quantity * unit_price
-      'SELECT SUM(quantity) AS total_stock_out, SUM(quantity * unit_price) AS total_sales FROM stock_out WHERE date = ?',
+      'SELECT SUM(quantity) AS total_stock_out, SUM(total_price) AS total_sales FROM stock_out WHERE date = ?',
       [date]
     );
     
-    // For remaining stock, it's better to get the current snapshot, not tied to a specific date's transactions
-    const sparePartsCurrentStock = await executeQuery('SELECT id, name, quantity, unit_price FROM spare_parts');
+    const sparePartsCurrentStock = await executeQuery('SELECT id, name, category, quantity, unit_price, total_price FROM spare_parts');
 
     res.json({
       date,
       total_stock_in: stockInResults[0]?.total_stock_in || 0,
       total_stock_out: stockOutResults[0]?.total_stock_out || 0,
       total_sales: stockOutResults[0]?.total_sales || 0,
-      current_stock_levels: sparePartsCurrentStock // Renamed for clarity
+      current_stock_levels: sparePartsCurrentStock
     });
   } catch (error) {
     console.error('Error generating daily report:', error);
@@ -546,37 +535,15 @@ app.get('/api/reports/daily', authenticate, async (req, res) => {
   }
 });
 
-// Categories Routes
-app.get('/api/categories', authenticate, async (req, res) => {
+app.get('/api/categories-list', authenticate, async (req, res) => {
   try {
-    const categories = await executeQuery('SELECT id, name FROM categories ORDER BY name ASC');
-    res.json(categories);
+    const categories = await executeQuery('SELECT DISTINCT category FROM spare_parts ORDER BY category ASC');
+    res.json(categories.map(c => c.category));
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    res.status(500).json({ error: 'Failed to fetch categories' });
+    console.error('Error fetching categories list:', error);
+    res.status(500).json({ error: 'Failed to fetch categories list' });
   }
 });
-
-app.post('/api/categories', authenticate, async (req, res) => {
-    try {
-        const { name } = req.body;
-        if (!name || name.trim() === "") {
-            return res.status(400).json({ error: "Category name is required." });
-        }
-
-        const existing = await executeQuery('SELECT id FROM categories WHERE name = ?', [name.trim()]);
-        if (existing.length > 0) {
-            return res.status(409).json({ error: "Category with this name already exists." });
-        }
-
-        const result = await executeQuery('INSERT INTO categories (name) VALUES (?)', [name.trim()]);
-        res.status(201).json({ message: "Category created successfully", id: result.insertId, name: name.trim() });
-    } catch (error) {
-        console.error('Error creating category:', error);
-        res.status(500).json({ error: 'Failed to create category' });
-    }
-});
-
 
 // General error handling middleware (should be last)
 app.use((err, req, res, next) => {
