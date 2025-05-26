@@ -1,0 +1,7 @@
+@import "tailwindcss";
+ @plugin "daisyui" {
+   themes: light --default, dark --prefersdark,valentine;
+ }
+body {
+    @apply bg-blue-200
+}
