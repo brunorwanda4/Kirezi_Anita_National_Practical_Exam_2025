@@ -323,6 +323,8 @@ app.post('/api/stock-in', authenticate, async (req, res) => {
   }
 });
 
+
+
 // Stock Out Routes
 app.post('/api/stock-out', authenticate, async (req, res) => {
   try {

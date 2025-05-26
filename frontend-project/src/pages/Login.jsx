@@ -30,7 +30,7 @@ const Login = () => {
       const { token, user } = res.data;
       localStorage.setItem('token', token);
       // Optionally store user info if needed, e.g., for display
-      // localStorage.setItem('user', JSON.stringify(user)); 
+      localStorage.setItem('user', JSON.stringify(user)); 
       console.log('Login successful:', res.data.message);
       navigate('/home');
     } catch (err) {

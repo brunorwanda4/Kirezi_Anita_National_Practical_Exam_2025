@@ -97,9 +97,9 @@ const StockOutPage = () => {
                 <tr key={item.id} className="hover">
                   <td>{item.id}</td>
                   <td>{item.spare_part_name}</td>
-                  <td>{item.category_name}</td>
+                  <td>{item.category}</td>
                   <td>{item.quantity}</td>
-                  <td>${item.unit_price?.toFixed(2)}</td>
+                  <td>${item.unit_price }</td>
                   <td>${(item.quantity * item.unit_price).toFixed(2)}</td>
                   <td>{new Date(item.date).toLocaleDateString()}</td>
                   <td className="space-x-1">

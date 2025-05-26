@@ -71,7 +71,7 @@ const SparePartsPage = () => {
                 <th>Category</th>
                 <th>Quantity</th>
                 <th>Unit Price</th>
-                <th>Actions</th>
+                {/* <th>Actions</th> */}
               </tr>
             </thead>
             <tbody>
@@ -79,13 +79,13 @@ const SparePartsPage = () => {
                 <tr key={part.id} className="hover">
                   <td>{part.id}</td>
                   <td>{part.name}</td>
-                  <td>{part.category_name || 'N/A'}</td>
+                  <td>{part.category || 'N/A'}</td>
                   <td>{part.quantity}</td>
-                  <td>${part.unit_price?.toFixed(2)}</td>
-                  <td className="space-x-2">
+                  <td>${part.unit_price}</td>
+                  {/* <td className="space-x-2">
                     <button onClick={() => handleEdit(part)} className="btn btn-xs btn-outline btn-info">Edit</button>
                     <button onClick={() => handleDelete(part.id)} className="btn btn-xs btn-outline btn-error">Delete</button>
-                  </td>
+                  </td> */}
                 </tr>
               )) : (
                 <tr><td colSpan="6" className="text-center py-4">No spare parts found.</td></tr>

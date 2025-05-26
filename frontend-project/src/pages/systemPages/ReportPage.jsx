@@ -43,7 +43,7 @@ const ReportPage = () => {
       item.id,
       item.name,
       item.quantity,
-      item.unit_price?.toFixed(2) || "0.00",
+      item.unit_price  || "0.00",
     ]);
 
     let csvContent = "data:text/csv;charset=utf-8,";
@@ -134,7 +134,7 @@ const ReportPage = () => {
             <div className="stat">
               <div className="stat-title">Total Sales</div>
               <div className="stat-value">
-                ${reportData.total_sales?.toFixed(2)}
+                ${reportData.total_sales }
               </div>
             </div>
           </div>
@@ -162,7 +162,7 @@ const ReportPage = () => {
                           <td>{item.id}</td>
                           <td>{item.name}</td>
                           <td>{item.quantity}</td>
-                          <td>${item.unit_price?.toFixed(2)}</td>
+                          <td>${item.unit_price }</td>
                         </tr>
                       ))
                     ) : (

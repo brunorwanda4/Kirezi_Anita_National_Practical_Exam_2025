@@ -86,7 +86,7 @@ const StockOutForm = ({ onSuccess }) => {
               <option value="" disabled>Select Spare Part</option>
               {spareParts.map(part => <option key={part.id} value={part.id}>{part.name} (Available: {part.quantity})</option>)}
             </select>
-             {selectedPartDetails && <p className="text-xs mt-1">Current stock: {selectedPartDetails.quantity}, Cost Price: ${selectedPartDetails.unit_price?.toFixed(2)}</p>}
+             {selectedPartDetails && <p className="text-xs mt-1">Current stock: {selectedPartDetails.quantity}, Cost Price: ${selectedPartDetails.unit_price }</p>}
           </div>
           <div className="form-control">
             <label className="label"><span className="label-text">Quantity</span></label>
